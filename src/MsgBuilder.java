@@ -43,4 +43,12 @@ public class MsgBuilder {
         msgDict.put("msg", msg);
         return msgDict.toString();
     }
+
+	public String buildFakeNewsWarningMsg(String sender, String time, String subject) {
+        Map<String, String> msgDict = buildInitialMap();
+        msgDict.put("msgType", "FakeNewsWarning");
+        msgDict.put("reference", sender + "-" + time);
+        msgDict.put("subject", subject);
+        return msgDict.toString();
+	}
 }

@@ -1,6 +1,4 @@
 import java.net.*;
-import java.security.PublicKey;
-import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.io.*;
@@ -127,6 +125,18 @@ public class MulticastPeer extends Thread {
         }
     }
 
+    private void sendFakeNewsWarning(Map<String, String> msgMap, String subject) {
+        String sender = msgMap.get("sender");
+        String time = msgMap.get("time");
+        String newsMsg = msgBuilder.buildFakeNewsWarningMsg(sender, time, subject);
+        try {
+            sendStringToGroup(newsMsg);
+        } catch (IllegalArgumentException | IOException e) {
+            System.out.println("Error while sending FakeNewsWarning");
+            e.printStackTrace();
+        }
+    }
+
     public void sendStringToGroup(String msg) throws IOException, IllegalArgumentException {
 
         if (multicastSocket == null)
@@ -165,22 +175,30 @@ public class MulticastPeer extends Thread {
                 break;
 
             case "News":
-                decryptMsg(msgMap);
+                String decryptedMsg = decryptMsg(msgMap);
+                System.out.println("Decrypted News: " + decryptedMsg + "\n");
+                String fakeNewsSubject = FakeNewsAnalyzer.containsFakeNews(decryptedMsg);
+                if(fakeNewsSubject != null){
+                    sendFakeNewsWarning(msgMap, fakeNewsSubject);
+                    //ReputationKeeper.updateList(msgMap);
+                }
             default:
                 break;
         }
 
     }
 
-    private void decryptMsg(Map<String, String> msgMap) {
+
+
+    private String decryptMsg(Map<String, String> msgMap) {
 
         String sender = msgMap.get("sender");
         String msgAsString = msgMap.get("msg");
         String peerPublicKeyAsString = knownPeers.get(sender);
         
-        String decodedMsg = crypto.decryptMsg(peerPublicKeyAsString, msgAsString);
+        String decryptedMsg = crypto.decryptMsg(peerPublicKeyAsString, msgAsString);
 
-        System.out.println("Decrypted News: " + decodedMsg + "\n");
+        return decryptedMsg;
 
     }
 

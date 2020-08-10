@@ -2,16 +2,33 @@ NewsShare
 -3 processes, multicast
 -Should allow peer entering and exiting at anytime
 
-1) New peer enters and anounce itself (with its primary-key and address:port)
-2) Other peers send their public-key by unicast;
+OK 1) New peer enters and anounce itself (with its primary-key and address:port)
+OK 2) Other peers send their public-key by unicast;
 	-Find java assimetric lybrary and encrypt message
 3) Peers send news in the group
 	- if a peer recongnizes a message as fake, it should warn the group
 		-How to decide if a message is fake or not? contains?
 		-How to identify the message
+
 4) Save peers reputation (peer x n. of fake news)
 
 5) Avoid that one process pose as another (using same address?)
 	- Given a message and its public key, how to check if
 	the message was correctly encripted?
 
+
+ReputationKeeper
+
+Ao receber uma notícia, um nó
+pode caracteriza-la como falsa enviando um alerta para o grupo. Crie
+uma forma de manter localmente uma lista com a reputação de cada nó
+no grupo com base nas notícias que ele enviou e nas suas verificações
+da veracidade das notícias
+
+
+	updateReputationList:
+		if sender exists, increment
+		else add new sender
+
+ReputationList:
+sender: numOfFakeNews

@@ -11,8 +11,8 @@ msg: Hello, World
 
 sender: /192.168.0.107:6789
 msgType: FakeNewWarning
-msgId: 100
-maliciousPeer: /192.168.0.107:6788
+msg: 1554@debian-18:45:50
+
 
 
             // TODO : Use not deprecated method
