@@ -1,0 +1,22 @@
+
+sender: /192.168.0.107:6789
+msgType: Greeting
+publicKey: sopkspOKASIDJSA65
+
+sender: /192.168.0.107:6789
+msgType: News
+msgId: 100
+msg: Hello, World
+
+
+sender: /192.168.0.107:6789
+msgType: FakeNewWarning
+msgId: 100
+maliciousPeer: /192.168.0.107:6788
+
+
+            // TODO : Use not deprecated method
+            // s = new MulticastSocket();
+            // SocketAddress address = new InetSocketAddress(args[1], port);
+            // NetworkInterface netInt = NetworkInterface.getByName("wlp2s0");
+            // s.joinGroup(address, netInt);      
