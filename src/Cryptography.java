@@ -9,16 +9,20 @@ import java.security.spec.X509EncodedKeySpec;
 
 import javax.crypto.Cipher;
 import java.util.Base64;
-
-// https://www.devglan.com/java8/rsa-encryption-decryption-java  
+/**
+ * This class is reponsible for all message encryption and decryption activity
+ * Adapted from:
+ * https://www.devglan.com/java8/rsa-encryption-decryption-java  
+ */
 public class Cryptography {
 
     private static final String RSA = "RSA";
 
     private static KeyPair peerKeyPair;
 
-    // Generating public & private keys
-    // using RSA algorithm.
+    /**
+     * Generating public & private keys using RSA algorithm.
+     * */ 
     public void generateRSAKkeyPair() throws Exception {
         SecureRandom secureRandom = new SecureRandom();
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(RSA);
@@ -28,6 +32,11 @@ public class Cryptography {
         //peerKeyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
     }
 
+    /**
+     * Use this method to get the Public Key already generated in the class
+     * as a String
+     * @return
+     */
     public String getPublicKeyAsString() {
 
         byte [] pubKeyByteArray = peerKeyPair.getPublic().getEncoded();
@@ -36,9 +45,14 @@ public class Cryptography {
         return pubKeyString;
     }
 
-    // Encryption function which converts
-    // the plainText into a cipherText
-    // using private Key.
+    /**
+     * Encryption method which converts
+     * the plainText into a cipherText
+     * using private Key.
+     * @param plainText
+     * @return the encrypted message as a Base64 encoded string
+     * @throws Exception
+     */
     public String do_RSAEncryption(String plainText) throws Exception {
         Cipher cipher = Cipher.getInstance(RSA);
 
@@ -48,35 +62,53 @@ public class Cryptography {
         return Base64.getEncoder().encodeToString(cipher.doFinal(plainText.getBytes()));
     }
 
-    // Decryption function which converts
-    // the ciphertext back to the
-    // orginal plaintext.
-    public String do_RSADecryption(byte[] cipherText, PublicKey publicKey) throws Exception {
+    /**
+     * Decryption method which converts
+     * the ciphertext back to the
+     * orginal plaintext.
+     * @param cipherText the message to be decrypted
+     * @param publicKey the public key to decrypt the message
+     * @return the decrypted encoded text 
+     * @throws Exception
+     */
+    private byte[] do_RSADecryption(byte[] cipherText, PublicKey publicKey) throws Exception {
         Cipher cipher = Cipher.getInstance(RSA);
 
         cipher.init(Cipher.DECRYPT_MODE, publicKey);
         byte[] result = cipher.doFinal(cipherText);
 
-        return new String(result);
+        return result;
     }
     
+    /**
+     * Public accessible method to decrypt a message,
+     * given the text and the public key as Strings
+     * @param peerPublicKeyAsString
+     * @param msgText
+     * @return  the decrypted message as string
+     */
     public String decryptMsg(String peerPublicKeyAsString, String msgText){
         
         PublicKey peerPublicKey = getPublicKey(peerPublicKeyAsString);
         byte[] msgBytes = Base64.getDecoder().decode(msgText);
 
-        String decodedMsg = null;
+        byte[] decryptedMsg = null;
 
         try {
-            decodedMsg = do_RSADecryption(msgBytes, peerPublicKey);
+            decryptedMsg = do_RSADecryption(msgBytes, peerPublicKey);
         } catch (Exception e) {
             System.out.println("Error while decrypting the message");
             e.printStackTrace();
         }
 
-        return decodedMsg;
+        return new String(decryptedMsg);
     }
-
+    /**
+     * Generates a PublicKey objet from a string
+     * of an public key
+     * @param base64PublicKey
+     * @return
+     */
     public PublicKey getPublicKey(String base64PublicKey){
         PublicKey publicKey = null;
         try{
@@ -91,49 +123,5 @@ public class Cryptography {
         }
         return publicKey;
     }
-    // Driver code 
-/*    public static void main(String args[]) 
-        throws Exception 
-    { 
-  
- 
-        // System.out.println( 
-        //     "The Public Key is: "
-        //           + toHexString(keypair.getPublic().getEncoded()));          
-
-        // System.out.println( 
-        //     "The Private Key is: "
-        //           + Base64.getEncoder().encodeToString(keypair.getPrivate().getEncoded()));
-  
-        
-        String pubKeyString = Base64.getEncoder().encodeToString(keypair.getPublic().getEncoded());
-        PublicKey pubKey = Encoding.getPublicKey(pubKeyString);
-
-        System.out.println( 
-        "The Original Public Key is: "
-                + keypair.getPublic().getEncoded());
-
-        System.out.println("The decoded pubkey is" + pubKey.getEncoded());
-
-        System.out.print("The Encrypted Text is: "); 
-  
-        System.out.println( 
-                cipherText); 
-  
-        String decryptedText 
-                = do_RSADecryption( 
-                    cipherText, 
-                    pubKey);
-
-
-        // String decryptedText 
-        //     = do_RSADecryption( 
-        //         cipherText, 
-        //         keypair.getPublic()); 
-  
-        System.out.println( 
-            "The decrypted text is: "
-            + decryptedText); 
-    } 
-    */
+    
 } 

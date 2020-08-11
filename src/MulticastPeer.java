@@ -24,6 +24,7 @@ public class MulticastPeer extends Thread {
     private Cryptography crypto;
     private MsgBuilder msgBuilder;
     private UDPUnicast unicast;
+    private ReputationKeeper repkeeper;
 
     public MulticastPeer(String groupIp, int port, int unicastListenPort, Cryptography crypto) {
 
@@ -37,8 +38,12 @@ public class MulticastPeer extends Thread {
 
         knownPeers = new LinkedHashMap<String, String>();
         msgBuilder = new MsgBuilder(myUserName);
+        repkeeper = new ReputationKeeper();
 
-        // Start Unicast server
+        // Start Reputation keeper
+        repkeeper.startKeeper();
+
+        // Start Unicast server (in a new thread)
         unicast = new UDPUnicast(unicastListenPort);
         unicast.start();
 
@@ -180,7 +185,7 @@ public class MulticastPeer extends Thread {
                 String fakeNewsSubject = FakeNewsAnalyzer.containsFakeNews(decryptedMsg);
                 if(fakeNewsSubject != null){
                     sendFakeNewsWarning(msgMap, fakeNewsSubject);
-                    //ReputationKeeper.updateList(msgMap);
+                    updateReputationRank(msgMap);
                 }
             default:
                 break;
@@ -189,6 +194,12 @@ public class MulticastPeer extends Thread {
     }
 
 
+
+    private void updateReputationRank(Map<String, String> msgMap) {
+        
+        String sender = msgMap.get("sender");
+        repkeeper.updateFile(sender);
+    }
 
     private String decryptMsg(Map<String, String> msgMap) {
 

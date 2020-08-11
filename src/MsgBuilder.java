@@ -3,14 +3,25 @@ import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * This class is used to build the diferent types of messages
+ * the peer has to send. All methods receive parameters as String
+ * and return the message as a Map
+ */
 public class MsgBuilder {
         
     String username;
 
+    
     public MsgBuilder(String username) {
         this.username = username;
     }
 
+    /**
+     * Start the Map and fill it with the sender username and time,
+     * which are present in all messages
+     * @return the created map with common entries
+     */
     public Map<String, String> buildInitialMap(){
         Map<String, String> msgDict = new LinkedHashMap<String, String>();
         String now = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));

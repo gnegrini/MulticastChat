@@ -1,9 +1,18 @@
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * Common class to help with general activities,
+ * such as printing a Map or parsing data.
+ */
 public class Helpers {
-    
-    // Ref: https://stackoverflow.com/questions/26485964/how-to-convert-string-into-hashmap-in-java/26486046
+    /**
+     * Converts a PacketData to a Map with values
+     * Adapted from:
+     * https://stackoverflow.com/questions/26485964/how-to-convert-string-into-hashmap-in-java/26486046
+     * @param value the data valeu fom the PacketData
+     * @return a Map with the data
+     */
     public static Map<String,String> parsePacketDataToMap(byte[] value){
         
         String msgString =  new String(value);
@@ -24,7 +33,10 @@ public class Helpers {
         return map;
 
     }
-
+    /**
+     * Prints the Map in the console as "key:value" par
+     * @param userMsg the map to be printed
+     */
     public static void printMap(Map<String, String> userMsg) {
 
         System.out.println("\nReceived: ");                
