@@ -1,3 +1,4 @@
+import java.lang.management.ManagementFactory;
 import java.util.*;
 
 /**
@@ -8,24 +9,29 @@ public class Main{
     static String groupIp = "228.5.5.5";
     static int groupPort = 6789;
     static int unicastListenPort;
+    static String myUserName;
 
     static MulticastPeer peer;
         
     static Scanner keyboard;
     static Cryptography crypto;
-
     
 
     public static void main(final String args[]) throws Exception {
         
         validateUserInput(args);
 
+        myUserName = ManagementFactory.getRuntimeMXBean().getName();
+
+        System.out.println("Welcomed " + myUserName + "!");
         System.out.println("Type in your message or 'e' to exit: ");                    
                 
 
         // Start Multicast server
         crypto = new Cryptography();
-        peer = new MulticastPeer(groupIp, groupPort, unicastListenPort,crypto);                                                        
+        crypto.generateRSAKkeyPair();
+        crypto.generateSignature();
+        peer = new MulticastPeer(groupIp, groupPort, unicastListenPort,myUserName, crypto);                                                        
         peer.startPeer();
         
         
@@ -67,7 +73,7 @@ public class Main{
 
             switch (option) {
                 case "e":
-                    keyboard.close();
+                    keyboard.close();                    
                     peer.exit();                    
                     System.exit(0);
                     break;                

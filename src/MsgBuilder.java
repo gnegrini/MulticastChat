@@ -11,10 +11,12 @@ import java.util.Map;
 public class MsgBuilder {
         
     String username;
+    String signature;
 
     
-    public MsgBuilder(String username) {
+    public MsgBuilder(String username, String signature) {
         this.username = username;
+        this.signature = signature;
     }
 
     /**
@@ -28,7 +30,7 @@ public class MsgBuilder {
 
         msgDict.put("sender", username);
         msgDict.put("time", now);
-        //msgDict.put("msgId", String.valueOf(msgDict.hashCode()));
+        msgDict.put("signature", signature);
         
         return msgDict;
     }
@@ -61,5 +63,13 @@ public class MsgBuilder {
         msgDict.put("reference", sender + "-" + time);
         msgDict.put("subject", subject);
         return msgDict.toString();
+	}
+
+	public String buildGoodbyeMsg() {
+        
+        Map<String, String> msgDict = buildInitialMap();        
+        msgDict.put("msgType", "Goodbye");        
+        return msgDict.toString();
+    
 	}
 }

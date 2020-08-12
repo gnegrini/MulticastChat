@@ -2,7 +2,6 @@ import java.net.*;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.io.*;
-import java.lang.management.ManagementFactory;
 
 /**
  * This class creates a MulticastPeer Usage: put the message in args[0] and the
@@ -26,32 +25,32 @@ public class MulticastPeer extends Thread {
     private UDPUnicast unicast;
     private ReputationKeeper repkeeper;
 
-    public MulticastPeer(String groupIp, int port, int unicastListenPort, Cryptography crypto) {
+    public MulticastPeer(String groupIp, int port, int unicastListenPort, String username, Cryptography crypto) {
 
         this.groupIp = groupIp;
         this.groupPortNumber = port;
         this.myUnicastPort = unicastListenPort;
         this.crypto = crypto;
+        this.myUserName = username;
+
         isActive = false;
 
-        myUserName = ManagementFactory.getRuntimeMXBean().getName();
+    }
+
+    public void startPeer() {
 
         knownPeers = new LinkedHashMap<String, String>();
-        msgBuilder = new MsgBuilder(myUserName);
-        repkeeper = new ReputationKeeper();
+        msgBuilder = new MsgBuilder(myUserName, crypto.getSignature());
+        repkeeper = new ReputationKeeper(myUserName);
 
         // Start Reputation keeper
         repkeeper.startKeeper();
 
         // Start Unicast server (in a new thread)
-        unicast = new UDPUnicast(unicastListenPort);
+        unicast = new UDPUnicast(myUnicastPort);
         unicast.start();
 
-    }
-
-    public void startPeer() {
         try {
-            crypto.generateRSAKkeyPair();
             myPublicKey = crypto.getPublicKeyAsString();
             joinMulticastGroup();
             sendGreeting();
@@ -62,10 +61,6 @@ public class MulticastPeer extends Thread {
         }
     }
 
-    public void run() {
-        listenToGroup();
-    }
-
     public void joinMulticastGroup() throws IOException {
 
         groupInet = InetAddress.getByName(groupIp);
@@ -73,6 +68,10 @@ public class MulticastPeer extends Thread {
         multicastSocket.joinGroup(groupInet);
 
         isActive = true;
+    }
+
+    public void run() {
+        listenToGroup();
     }
 
     public void listenToGroup() {
@@ -85,7 +84,7 @@ public class MulticastPeer extends Thread {
             try {
                 multicastSocket.receive(messageIn);
             } catch (IOException e) {
-                System.out.println("Error while listening to group");
+                System.out.println("Socket connection closed");
                 e.printStackTrace();
             }
 
@@ -93,6 +92,74 @@ public class MulticastPeer extends Thread {
 
         }
 
+    }
+
+    /**
+     * Decides next steps depending on the map receive
+     * 
+     * @param map
+     */
+    private void handleMessage(DatagramPacket messageIn) {
+
+        Map<String, String> msgMap = Helpers.parsePacketDataToMap(messageIn.getData());
+
+        // no need to handle own message
+        if (msgMap.get("sender").equals(myUserName)) {
+            return;
+        }
+
+        Helpers.printMap(msgMap);
+
+        try {
+            verifySignature(msgMap);
+        } catch (Exception e) {
+            String sender = msgMap.get("sender");
+            String time = msgMap.get("time");
+            System.out.println("Signature could not be verified for msg: " + sender + "-" + time);
+            return;
+        }
+
+        switch (msgMap.get("msgType")) {
+            case "Greeting":
+                addPeerToKnownPeersMap(msgMap);
+                sendGreetingBack(msgMap);
+                break;
+
+            case "News":
+                String decryptedMsg = decryptMsg(msgMap);
+                System.out.println("Decrypted News: " + decryptedMsg + "\n");
+                String fakeNewsSubject = FakeNewsAnalyzer.containsFakeNews(decryptedMsg);
+                if (fakeNewsSubject != null) {
+                    sendFakeNewsWarning(msgMap, fakeNewsSubject);
+                    updateReputationRank(msgMap);
+                }
+                break;
+                
+            case "Goodbye":
+                removePeerFromKnownPeersMap(msgMap);
+                break;
+
+            default:
+                System.out.println("Message type unknown");
+                break;
+        }
+
+    }
+
+    private void verifySignature(Map<String, String> msgMap) throws Exception {
+        // no need to verify signature
+        if(msgMap.get("msgType").equals("Greeting"))
+            return;
+        
+        String signature = msgMap.get("signature");        
+        String peerPublicKeyAsString = retrievePeerPublicKey(msgMap);
+        String decryptedSignature = crypto.decryptText(peerPublicKeyAsString, signature);
+
+        if(!decryptedSignature.equals("Authenticated")){
+            throw new Exception("Signature could not be verified");
+        }
+        
+        return;
     }
 
     public void sendGreeting() throws Exception {
@@ -158,70 +225,73 @@ public class MulticastPeer extends Thread {
 
     }
 
-    /**
-     * Decides next steps depending on the map receive
-     * 
-     * @param map
-     */
-    private void handleMessage(DatagramPacket messageIn) {
-
-        Map<String, String> msgMap = Helpers.parsePacketDataToMap(messageIn.getData());
-
-        if (msgMap.get("sender").equals(myUserName)) {
-            return;
-        }
-
-        Helpers.printMap(msgMap);
-
-        switch (msgMap.get("msgType")) {
-            case "Greeting":
-                addPeerToKnownPeersMap(msgMap);
-                sendGreetingBack(msgMap);
-                break;
-
-            case "News":
-                String decryptedMsg = decryptMsg(msgMap);
-                System.out.println("Decrypted News: " + decryptedMsg + "\n");
-                String fakeNewsSubject = FakeNewsAnalyzer.containsFakeNews(decryptedMsg);
-                if(fakeNewsSubject != null){
-                    sendFakeNewsWarning(msgMap, fakeNewsSubject);
-                    updateReputationRank(msgMap);
-                }
-            default:
-                break;
-        }
-
-    }
-
-
-
     private void updateReputationRank(Map<String, String> msgMap) {
-        
+
         String sender = msgMap.get("sender");
         repkeeper.updateFile(sender);
     }
 
     private String decryptMsg(Map<String, String> msgMap) {
 
-        String sender = msgMap.get("sender");
-        String msgAsString = msgMap.get("msg");
-        String peerPublicKeyAsString = knownPeers.get(sender);
+        String peerPublicKeyAsString;
+        try {
+            peerPublicKeyAsString = retrievePeerPublicKey(msgMap);
+        } catch (Exception e) {
+            System.out.println("Error decrypting msg, sender is unknown");
+            e.printStackTrace();
+            return null;
+        }
         
-        String decryptedMsg = crypto.decryptMsg(peerPublicKeyAsString, msgAsString);
+        String msgAsString = msgMap.get("msg");
+        String decryptedMsg = crypto.decryptText(peerPublicKeyAsString, msgAsString);
 
         return decryptedMsg;
 
     }
 
+    private String retrievePeerPublicKey(Map<String, String> msgMap) throws Exception {
+        String sender = msgMap.get("sender");
+        String peerPublicKeyAsString = knownPeers.get(sender);
+        
+        if(peerPublicKeyAsString == null){
+            throw new Exception("Could not find peer public key");
+        }
+
+        return peerPublicKeyAsString;
+    }
+
     public static void addPeerToKnownPeersMap(Map<String, String> msgMap) {
                 
         knownPeers.putIfAbsent(msgMap.get("sender"), msgMap.get("publicKey"));        
-        System.out.println("Updated peers map. Total known peers: "+ knownPeers.size());
+        System.out.println("Updated peers map: add. Total known peers: "+ knownPeers.size());
         
     }
 
+    public static void removePeerFromKnownPeersMap(Map<String, String> msgMap) {
+                        
+        knownPeers.remove(msgMap.get("sender"));
+        System.out.println("Updated peers map: remove. Total known peers: "+ knownPeers.size());
+        
+    }
+
+    
+
+	public void sendGoodbye() {
+        try {
+
+            String goodbyeMsg = msgBuilder.buildGoodbyeMsg();
+            sendStringToGroup(goodbyeMsg);
+
+        } catch (Exception e) {
+            System.out.println("Error while sending goodbye");
+            e.printStackTrace();
+        }
+	}
+
     public void exit() {
         isActive = false;
+
+        sendGoodbye();
 
         try {
             multicastSocket.leaveGroup(groupInet);

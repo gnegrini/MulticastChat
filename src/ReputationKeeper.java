@@ -11,23 +11,16 @@ public class ReputationKeeper {
     private String filePath = "/home/gnegrini/Distribuidos/MulticastNewsShare/";
     private String lineSeparator = System.getProperty("line.separator");
 
-    public boolean networkAlreadyHasKeeper;
 
-    /**
-     * This method checks if the reputation file already exists in the folder
-     * If yes, it sets the networkAlreadyHasKeeper to true, which will block
-     * file overide. If not, the is created and this peer will be the only 
-     * responsible for updating the file
-     * WARNING: Rembember to manually delete the file after the program ends
-     */
+    public ReputationKeeper(String username){
+        this.fileName = username+fileName;
+    }
+
+
     public void startKeeper() {
 
-        if (findReputationFile()) {
-            networkAlreadyHasKeeper = true;
-        } else {
-            networkAlreadyHasKeeper = false;
-            createReputationFile();
-        }
+        createReputationFile();
+
     }
 
     /**
@@ -76,11 +69,7 @@ public class ReputationKeeper {
      * //https://stackoverflow.com/questions/1377279/find-a-line-in-a-file-and-remove-it
      * @param sender
      */
-
 	public void updateFile(String sender) {
-
-        if(networkAlreadyHasKeeper)
-            return;
 
         int numOfFakeNews = 1;
         

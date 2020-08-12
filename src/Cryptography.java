@@ -17,8 +17,11 @@ import java.util.Base64;
 public class Cryptography {
 
     private static final String RSA = "RSA";
+    private static final String signature = "Authenticated";
 
     private static KeyPair peerKeyPair;
+
+    private String encryptedSignature;
 
     /**
      * Generating public & private keys using RSA algorithm.
@@ -31,6 +34,14 @@ public class Cryptography {
         peerKeyPair = keyPairGenerator.generateKeyPair();
         //peerKeyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
     }
+
+    public void generateSignature() throws Exception {
+        this.encryptedSignature = do_RSAEncryption(signature);
+    }
+
+    public String getSignature() {
+		return encryptedSignature;
+	}
 
     /**
      * Use this method to get the Public Key already generated in the class
@@ -87,7 +98,7 @@ public class Cryptography {
      * @param msgText
      * @return  the decrypted message as string
      */
-    public String decryptMsg(String peerPublicKeyAsString, String msgText){
+    public String decryptText(String peerPublicKeyAsString, String msgText){
         
         PublicKey peerPublicKey = getPublicKey(peerPublicKeyAsString);
         byte[] msgBytes = Base64.getDecoder().decode(msgText);
@@ -123,5 +134,7 @@ public class Cryptography {
         }
         return publicKey;
     }
+
+	
     
 } 
