@@ -16,7 +16,7 @@ public class MulticastPeer extends Thread {
     private String myPublicKey;
     private boolean isActive;
 
-    static Map<String, String> knownPeers;
+    private static Map<String, String> knownPeers;
 
     private InetAddress groupInet;
     private MulticastSocket multicastSocket;
@@ -25,11 +25,10 @@ public class MulticastPeer extends Thread {
     private UDPUnicast unicast;
     private ReputationKeeper repkeeper;
 
-    public MulticastPeer(String groupIp, int port, int unicastListenPort, String username, Cryptography crypto) {
+    public MulticastPeer(String groupIp, int groupPort, String username, Cryptography crypto) {
 
         this.groupIp = groupIp;
-        this.groupPortNumber = port;
-        this.myUnicastPort = unicastListenPort;
+        this.groupPortNumber = groupPort;
         this.crypto = crypto;
         this.myUserName = username;
 
@@ -37,7 +36,7 @@ public class MulticastPeer extends Thread {
 
     }
 
-    public void startPeer() {
+    public void startPeer() throws SocketException {
 
         knownPeers = new LinkedHashMap<String, String>();
         msgBuilder = new MsgBuilder(myUserName, crypto.getSignature());
@@ -47,8 +46,10 @@ public class MulticastPeer extends Thread {
         repkeeper.startKeeper();
 
         // Start Unicast server (in a new thread)
-        unicast = new UDPUnicast(myUnicastPort);
+        unicast = new UDPUnicast();        
+        myUnicastPort = unicast.getPort();
         unicast.start();
+        
 
         try {
             myPublicKey = crypto.getPublicKeyAsString();
@@ -61,7 +62,7 @@ public class MulticastPeer extends Thread {
         }
     }
 
-    public void joinMulticastGroup() throws IOException {
+    private void joinMulticastGroup() throws IOException {
 
         groupInet = InetAddress.getByName(groupIp);
         multicastSocket = new MulticastSocket(groupPortNumber);
@@ -101,21 +102,24 @@ public class MulticastPeer extends Thread {
      */
     private void handleMessage(DatagramPacket messageIn) {
 
-        Map<String, String> msgMap = Helpers.parsePacketDataToMap(messageIn.getData());
+        Map<String, String> msgMap = Helpers.parsePacketDataToMap(messageIn);
+        
 
         // no need to handle own message
-        if (msgMap.get("sender").equals(myUserName)) {
+        if (msgMap.get("senderUsername").equals(myUserName)) {
             return;
         }
 
+
+        
         Helpers.printMap(msgMap);
 
         try {
             verifySignature(msgMap);
         } catch (Exception e) {
-            String sender = msgMap.get("sender");
+            String senderUsername = msgMap.get("senderUsername");
             String time = msgMap.get("time");
-            System.out.println("Signature could not be verified for msg: " + sender + "-" + time);
+            System.out.println("Signature could not be verified for msg: " + senderUsername + "-" + time);
             return;
         }
 
@@ -137,6 +141,10 @@ public class MulticastPeer extends Thread {
                 
             case "Goodbye":
                 removePeerFromKnownPeersMap(msgMap);
+                break;
+
+            case "FakeNewsWarning":
+                System.out.println("Fake news warning acknowledged");
                 break;
 
             default:
@@ -198,9 +206,9 @@ public class MulticastPeer extends Thread {
     }
 
     private void sendFakeNewsWarning(Map<String, String> msgMap, String subject) {
-        String sender = msgMap.get("sender");
+        String senderUsername = msgMap.get("senderUsername");
         String time = msgMap.get("time");
-        String newsMsg = msgBuilder.buildFakeNewsWarningMsg(sender, time, subject);
+        String newsMsg = msgBuilder.buildFakeNewsWarningMsg(senderUsername, time, subject);
         try {
             sendStringToGroup(newsMsg);
         } catch (IllegalArgumentException | IOException e) {
@@ -209,7 +217,7 @@ public class MulticastPeer extends Thread {
         }
     }
 
-    public void sendStringToGroup(String msg) throws IOException, IllegalArgumentException {
+    private void sendStringToGroup(String msg) throws IOException, IllegalArgumentException {
 
         if (multicastSocket == null)
             throw new NullPointerException("Multicast Socket is null");
@@ -227,8 +235,8 @@ public class MulticastPeer extends Thread {
 
     private void updateReputationRank(Map<String, String> msgMap) {
 
-        String sender = msgMap.get("sender");
-        repkeeper.updateFile(sender);
+        String senderUsername = msgMap.get("senderUsername");
+        repkeeper.updateFile(senderUsername);
     }
 
     private String decryptMsg(Map<String, String> msgMap) {
@@ -250,8 +258,8 @@ public class MulticastPeer extends Thread {
     }
 
     private String retrievePeerPublicKey(Map<String, String> msgMap) throws Exception {
-        String sender = msgMap.get("sender");
-        String peerPublicKeyAsString = knownPeers.get(sender);
+        String senderUsername = msgMap.get("senderUsername");
+        String peerPublicKeyAsString = knownPeers.get(senderUsername);
         
         if(peerPublicKeyAsString == null){
             throw new Exception("Could not find peer public key");
@@ -262,21 +270,21 @@ public class MulticastPeer extends Thread {
 
     public static void addPeerToKnownPeersMap(Map<String, String> msgMap) {
                 
-        knownPeers.putIfAbsent(msgMap.get("sender"), msgMap.get("publicKey"));        
+        knownPeers.putIfAbsent(msgMap.get("senderUsername"), msgMap.get("publicKey"));        
         System.out.println("Updated peers map: add. Total known peers: "+ knownPeers.size());
         
     }
 
-    public static void removePeerFromKnownPeersMap(Map<String, String> msgMap) {
+    private static void removePeerFromKnownPeersMap(Map<String, String> msgMap) {
                         
-        knownPeers.remove(msgMap.get("sender"));
+        knownPeers.remove(msgMap.get("senderUsername"));
         System.out.println("Updated peers map: remove. Total known peers: "+ knownPeers.size());
         
     }
 
     
 
-	public void sendGoodbye() {
+	private void sendGoodbye() {
         try {
 
             String goodbyeMsg = msgBuilder.buildGoodbyeMsg();

@@ -18,8 +18,6 @@ public class Main{
     
 
     public static void main(final String args[]) throws Exception {
-        
-        validateUserInput(args);
 
         myUserName = ManagementFactory.getRuntimeMXBean().getName();
 
@@ -31,7 +29,7 @@ public class Main{
         crypto = new Cryptography();
         crypto.generateRSAKkeyPair();
         crypto.generateSignature();
-        peer = new MulticastPeer(groupIp, groupPort, unicastListenPort,myUserName, crypto);                                                        
+        peer = new MulticastPeer(groupIp, groupPort,myUserName, crypto);                                                        
         peer.startPeer();
         
         
@@ -40,28 +38,12 @@ public class Main{
         main.startMenu();
     }
 
-    /**
-     * Validate user's command line inputs.
-     * If a input is invalid, the program use the default values
-     * @param args
-     */
-    private static void validateUserInput(final String[] args) {
-        try {            
-            unicastListenPort = Integer.parseInt(args[0]);            
-        
-        } catch (NumberFormatException e) {
-            System.out.println("Arguments must be integers" + e.getMessage());
-            System.exit(1);
-        } catch (ArrayIndexOutOfBoundsException e){
-            System.out.println("Using default number for groupPort(6789) and unicastListenPort (6572)");                        
-            unicastListenPort = 6752;
-        }
-    }
 
     private void startMenu() throws Exception {
 
         while(true){                    
 
+            System.out.print(myUserName + ": ");
             keyboard = new Scanner(System.in);
             String option = keyboard.nextLine();            
             

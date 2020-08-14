@@ -4,13 +4,19 @@ import java.io.*;
 
 public class UDPUnicast extends Thread{
 
-    int listenPort;
-    private boolean isActive;
-    Helpers helpers;
+    private int listenPort;
+    private boolean isActive;    
 
-    public UDPUnicast(int listenPort){
-        this.listenPort = listenPort;
-        helpers = new Helpers();
+    private DatagramSocket listenSocket;
+
+    // public UDPUnicast(int listenPort){
+    //     this.listenPort = listenPort;        
+    // }
+
+    public UDPUnicast() throws SocketException {
+        listenSocket = new DatagramSocket();
+        listenPort = listenSocket.getLocalPort();
+
     }
 
     public void run(){
@@ -18,18 +24,18 @@ public class UDPUnicast extends Thread{
         listen();
     }
 
-    public void listen(){
-        DatagramSocket aSocket = null;
+    private void listen(){
+        //DatagramSocket aSocket = null;
         try{
-            aSocket = new DatagramSocket(listenPort);
+            
             
             while(isActive){
             
                 byte[] buffer = new byte[1000];
                 DatagramPacket request = new DatagramPacket(buffer, buffer.length);
-                aSocket.receive(request);
+                listenSocket.receive(request);
                 
-                Map<String,String> msgMap = Helpers.parsePacketDataToMap(request.getData());
+                Map<String,String> msgMap = Helpers.parsePacketDataToMap(request);
 
                 System.out.println("Unicast received");
 
@@ -38,17 +44,15 @@ public class UDPUnicast extends Thread{
                 MulticastPeer.addPeerToKnownPeersMap(msgMap);
                                 
             }
-        }catch (SocketException e)
-        {System.out.println("Socket: " + e.getMessage());
         }catch (IOException e)
         {
-            System.out.println("IO: " + e.getMessage());
+            System.out.println("IO at Unicast listen: " + e.getMessage());
         }
         finally
 
             {
-                if (aSocket != null)
-                    aSocket.close();
+                if (listenSocket != null)
+                    listenSocket.close();
             }
     }
 
@@ -60,7 +64,7 @@ public class UDPUnicast extends Thread{
 
             aSocket = new DatagramSocket();
             byte [] m = msg.getBytes();
-            InetAddress inetAdress = InetAddress.getByName(destinationHostname);            
+            InetAddress inetAdress = InetAddress.getByName(destinationHostname);                      
             DatagramPacket request = new DatagramPacket(m, m.length, inetAdress, destinationHostPort);
             aSocket.send(request);
             
@@ -69,7 +73,7 @@ public class UDPUnicast extends Thread{
             System.out.println("Socket: " + e.getMessage());
         }catch (IOException e)
         {
-            System.out.println("IO: " + e.getMessage());
+            System.out.println("IO at Unicast send: " + e.getMessage());
         }
         finally {
             if(aSocket != null) aSocket.close();
@@ -79,5 +83,9 @@ public class UDPUnicast extends Thread{
     public void closeServer(){
         isActive = false;
     }
+
+	public int getPort() {
+		return listenPort;
+	}
 
 }

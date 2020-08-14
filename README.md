@@ -1,18 +1,9 @@
-<<<<<<< HEAD
-## Getting Started
+## MulticastNewsShare
 
-Welcome to the VS Code Java world. Here is a guideline to help you get started to write Java code in Visual Studio Code.
+Welcome to MulticastNewsShare, a simple chat with cryptography and fake news detection.
+Implemented using UDP Multicast and Unicast for the Distributed Systems course @UTFPR
 
-## Folder Structure
+## Instructions
 
-The workspace contains two folders by default, where:
-
-- `src`: the folder to maintain sources
-- `lib`: the folder to maintain dependencies
-
-## Dependency Management
-
-The `JAVA DEPENDENCIES` view allows you to manage your dependencies. More details can be found [here](https://github.com/microsoft/vscode-java-pack/blob/master/release-notes/v0.9.0.md#work-with-jar-files-directly).
-=======
-# multicastChat
->>>>>>> 6c6776a6f4ec463a2d8797d8718fb0f2c3f445bf
+To use the chat, just run the Main class.
+Then type in your message or 'e' to exit.

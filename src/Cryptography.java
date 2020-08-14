@@ -100,7 +100,7 @@ public class Cryptography {
      */
     public String decryptText(String peerPublicKeyAsString, String msgText){
         
-        PublicKey peerPublicKey = getPublicKey(peerPublicKeyAsString);
+        PublicKey peerPublicKey = convertToPublicKeyObject(peerPublicKeyAsString);
         byte[] msgBytes = Base64.getDecoder().decode(msgText);
 
         byte[] decryptedMsg = null;
@@ -120,7 +120,7 @@ public class Cryptography {
      * @param base64PublicKey
      * @return
      */
-    public PublicKey getPublicKey(String base64PublicKey){
+    private PublicKey convertToPublicKeyObject(String base64PublicKey){
         PublicKey publicKey = null;
         try{
             X509EncodedKeySpec keySpec = new X509EncodedKeySpec(Base64.getDecoder().decode(base64PublicKey.getBytes()));

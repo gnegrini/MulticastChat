@@ -1,3 +1,4 @@
+import java.net.DatagramPacket;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -5,21 +6,24 @@ import java.util.Map;
  * Common class to help with general activities,
  * such as printing a Map or parsing data.
  */
-public class Helpers {
+public abstract class Helpers {
     /**
      * Converts a PacketData to a Map with values
      * Adapted from:
      * https://stackoverflow.com/questions/26485964/how-to-convert-string-into-hashmap-in-java/26486046
-     * @param value the data valeu fom the PacketData
+     * @param messageIn the data valeu fom the PacketData
      * @return a Map with the data
      */
-    public static Map<String,String> parsePacketDataToMap(byte[] value){
+    public static Map<String,String> parsePacketDataToMap(DatagramPacket messageIn){
         
-        String msgString =  new String(value);
-
-        msgString = msgString.trim();
 
         Map<String,String> map = new LinkedHashMap<>();            
+
+        map.put("senderSocketAdress", messageIn.getSocketAddress().toString());
+
+        String msgString =  new String(messageIn.getData());
+
+        msgString = msgString.trim();
 
         msgString = msgString.substring(1, msgString.length()-1);           //remove curly brackets
         String[] keyValuePairs = msgString.split(",");              //split the string to creat key-value pairs

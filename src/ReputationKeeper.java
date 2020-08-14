@@ -23,18 +23,6 @@ public class ReputationKeeper {
 
     }
 
-    /**
-     *  Checks if the file already exists
-     * */
-    private boolean findReputationFile() {
-
-        File csvFile = new File(filePath + fileName);
-        if (csvFile.isFile()) {
-            return true;
-        }
-        return false;
-    }
-
     /** 
      * Create initial file with  the headers
      * */
@@ -45,7 +33,7 @@ public class ReputationKeeper {
         try {
             csvWriter = new FileWriter(filePath + fileName);
 
-            csvWriter.append("sender");
+            csvWriter.append("senderUsername");
             csvWriter.append(",");
             csvWriter.append("numOfFakeNews");
             csvWriter.append(lineSeparator);
@@ -67,15 +55,15 @@ public class ReputationKeeper {
      * write it to another one and rename it in the end.
      * Adapted from:
      * //https://stackoverflow.com/questions/1377279/find-a-line-in-a-file-and-remove-it
-     * @param sender
+     * @param senderUsername
      */
-	public void updateFile(String sender) {
+	public void updateFile(String senderUsername) {
 
         int numOfFakeNews = 1;
         
         try{
             File inputFile = new File(filePath+fileName);
-            File tempFile = new File(filePath+"tempFile.csv");
+            File tempFile = new File(filePath+ "temp"+ fileName);
 
             BufferedReader reader = new BufferedReader(new FileReader(inputFile));
             BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile));
@@ -85,7 +73,7 @@ public class ReputationKeeper {
             while((currentLine = reader.readLine()) != null) {
                 // trim newline when comparing with lineToRemove
                 String trimmedLine = currentLine.trim();
-                if(trimmedLine.contains(sender)){
+                if(trimmedLine.contains(senderUsername)){
                     trimmedLine = trimmedLine.replace(lineSeparator, "");
                     String[] data = trimmedLine.split(",");
                     numOfFakeNews += Integer.parseInt(data[1]);
@@ -94,7 +82,7 @@ public class ReputationKeeper {
                 }
                 writer.write(currentLine + lineSeparator);
             }
-            writer.write(sender+","+numOfFakeNews+lineSeparator);
+            writer.write(senderUsername+","+numOfFakeNews+lineSeparator);
             writer.close();
             reader.close();
             if(!tempFile.renameTo(inputFile)){

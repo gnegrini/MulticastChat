@@ -10,8 +10,8 @@ import java.util.Map;
  */
 public class MsgBuilder {
         
-    String username;
-    String signature;
+    private String username;
+    private String signature;
 
     
     public MsgBuilder(String username, String signature) {
@@ -24,11 +24,11 @@ public class MsgBuilder {
      * which are present in all messages
      * @return the created map with common entries
      */
-    public Map<String, String> buildInitialMap(){
+    private Map<String, String> buildInitialMap(){
         Map<String, String> msgDict = new LinkedHashMap<String, String>();
         String now = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
 
-        msgDict.put("sender", username);
+        msgDict.put("senderUsername", username);
         msgDict.put("time", now);
         msgDict.put("signature", signature);
         
@@ -57,10 +57,10 @@ public class MsgBuilder {
         return msgDict.toString();
     }
 
-	public String buildFakeNewsWarningMsg(String sender, String time, String subject) {
+	public String buildFakeNewsWarningMsg(String senderUsername, String time, String subject) {
         Map<String, String> msgDict = buildInitialMap();
         msgDict.put("msgType", "FakeNewsWarning");
-        msgDict.put("reference", sender + "-" + time);
+        msgDict.put("reference", senderUsername + "-" + time);
         msgDict.put("subject", subject);
         return msgDict.toString();
 	}

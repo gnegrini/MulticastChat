@@ -1,11 +1,10 @@
 import java.util.Arrays;
 import java.util.List;
 
-public class FakeNewsAnalyzer {
+public abstract class FakeNewsAnalyzer {
     
-    static List<String> Blocklist = Arrays
-            .asList(new String[] { "kit gay", "mamadeira de piroca", 
-                "cloroquina cura covid", "whatsapp pago" });
+    private static List<String> Blocklist = Arrays
+            .asList(new String[] { "kit gay", "cloroquina cura covid", "whatsapp pago" });
 
     public static String containsFakeNews(String news) {
         String newsToTest = news.toLowerCase();
